@@ -1,16 +1,35 @@
+import { AuthContext } from '@/contexts/auth-context';
 import { useData } from '@/contexts/data-context';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { Button, Card, Chip, FAB, IconButton, Searchbar, Text, Title } from 'react-native-paper';
+import React, { useContext, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, View } from 'react-native';
+import { Badge, Button, Card, Chip, FAB, IconButton, Searchbar, Text, Title } from 'react-native-paper';
 
 const CATEGORIES = ['All', 'Programming', 'Music', 'Art', 'Fitness', 'Language', 'Business'];
 
 export default function HomeScreen() {
-  const { offers, searchOffers } = useData();
+  const { offers, searchOffers, sessions } = useData();
+  const { user } = useContext(AuthContext);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const router = useRouter();
+
+  const notificationCount = useMemo(() => {
+    if (!user) return 0;
+    return sessions.filter(session =>
+      (session.learnerId === user.id || session.tutorId === user.id) &&
+      session.status !== 'completed' &&
+      session.status !== 'cancelled'
+    ).length;
+  }, [sessions, user]);
+
+  const handleNotificationsPress = async () => {
+    setNotificationsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 900));
+    setNotificationsLoading(false);
+    Alert.alert('Notifications', 'You have ' + notificationCount + ' booked session(s).');
+  };
 
   const filteredOffers = useMemo(() => {
     let filtered = offers;
@@ -56,7 +75,19 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <Title style={styles.headerTitle}>Discover Skills</Title>
-          <IconButton icon="bell-outline" onPress={() => {}} accessibilityLabel="Notifications" />
+          <View style={styles.notificationContainer}>
+            <IconButton
+              icon={notificationsLoading ? () => <ActivityIndicator animating color="#2563eb" size="small" /> : 'bell-outline'}
+              onPress={handleNotificationsPress}
+              disabled={notificationsLoading}
+              accessibilityLabel="Notifications"
+            />
+            {notificationCount > 0 && (
+              <Badge style={styles.notificationBadge} size={18}>
+                {notificationCount > 99 ? '99+' : notificationCount}
+              </Badge>
+            )}
+          </View>
         </View>
         <Searchbar
           placeholder="Search skills..."
@@ -113,5 +144,18 @@ const styles = StyleSheet.create({
   ratingContainer: { alignItems: 'flex-end' },
   rating: { fontSize: 14, fontWeight: 'bold', color: '#ff9800' },
   sessions: { fontSize: 12, color: '#666' },
+  notificationContainer: { position: 'relative' },
+  notificationBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: '#d32f2f',
+    color: '#fff',
+    fontSize: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   fab: { position: 'absolute', margin: 16, right: 0, bottom: 0 },
 });

@@ -137,6 +137,23 @@ export default function Profile() {
 
       <Card style={styles.sectionCard}>
         <Card.Content>
+          <Title style={styles.sectionTitle}>Incoming Video Calls</Title>
+          <Button
+            mode="contained"
+            onPress={() => router.push('/incoming-calls')}
+            style={styles.incomingCallsButton}
+            icon="phone-incoming"
+          >
+            View Incoming Calls ({userSessions.filter(s => s.status === 'requested' && s.tutorId === user.id).length})
+          </Button>
+          <Text style={styles.callHelpText}>
+            Accept video call requests from learners who have booked your sessions.
+          </Text>
+        </Card.Content>
+      </Card>
+
+      <Card style={styles.sectionCard}>
+        <Card.Content>
           <Title style={styles.sectionTitle}>My Offers</Title>
           {userOffers.length > 0 ? (
             userOffers.map((offer) => (
@@ -158,10 +175,23 @@ export default function Profile() {
           {userSessions.length > 0 ? (
             userSessions.map((session) => (
               <View key={session.id} style={styles.sessionItem}>
-                <Text style={styles.sessionStatus}>{session.status}</Text>
-                <Text style={styles.sessionDate}>
-                  {new Date(session.scheduledAt).toLocaleDateString()}
-                </Text>
+                <View style={styles.sessionInfo}>
+                  <Text style={styles.sessionStatus}>{session.status.toUpperCase()}</Text>
+                  <Text style={styles.sessionDate}>
+                    {new Date(session.scheduledAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Button
+                  mode="contained"
+                  compact
+                  onPress={() => router.push({
+                    pathname: '/session-details',
+                    params: { sessionId: session.id }
+                  })}
+                  style={styles.sessionButton}
+                >
+                  Video Call
+                </Button>
               </View>
             ))
           ) : (
@@ -205,9 +235,13 @@ const styles = StyleSheet.create({
   offerTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
   offerCategory: { fontSize: 12, color: '#666', marginBottom: 4 },
   offerDescription: { fontSize: 14, color: '#333' },
-  sessionItem: { marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between' },
-  sessionStatus: { fontSize: 14, fontWeight: 'bold', color: '#2563eb' },
-  sessionDate: { fontSize: 14, color: '#666' },
+  sessionItem: { marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 8, backgroundColor: '#fff', borderRadius: 8 },
+  sessionInfo: { flex: 1 },
+  sessionStatus: { fontSize: 14, fontWeight: 'bold', color: '#2563eb', marginBottom: 4 },
+  sessionDate: { fontSize: 13, color: '#666' },
+  sessionButton: { marginLeft: 12 },
+  incomingCallsButton: { marginBottom: 12, paddingVertical: 8 },
+  callHelpText: { fontSize: 12, color: '#666', marginTop: 8 },
   emptyText: { fontSize: 14, color: '#666', fontStyle: 'italic', textAlign: 'center', padding: 20 },
   signOutButton: { margin: 16, marginTop: 0 },
 });

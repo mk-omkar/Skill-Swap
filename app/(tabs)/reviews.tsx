@@ -1,7 +1,7 @@
 import { AuthContext } from '@/contexts/auth-context';
 import { useData } from '@/contexts/data-context';
 import React, { useContext, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, View, Alert } from 'react-native';
 import { Button, Card, Text, TextInput, Title } from 'react-native-paper';
 
 export default function Reviews() {
@@ -10,6 +10,13 @@ export default function Reviews() {
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const getReviewerName = (item: any) => {
+    if (item.reviewerName) return item.reviewerName;
+    if (user && item.reviewerId === user.id) return user.name;
+    if (item.reviewerId) return item.reviewerId;
+    return 'Guest Reviewer';
+  };
 
   const handleSubmitReview = async () => {
     if (!newComment.trim()) {
@@ -21,6 +28,7 @@ export default function Reviews() {
       await addReview({
         sessionId: 'session_1', // This would come from a completed session
         reviewerId: user?.id || 'u1',
+        reviewerName: user?.name || 'Guest Reviewer',
         revieweeId: 'u2', // This would be the tutor being reviewed
         rating: newRating,
         comment: newComment.trim(),
@@ -39,7 +47,7 @@ export default function Reviews() {
     <Card style={styles.reviewCard}>
       <Card.Content>
         <View style={styles.reviewHeader}>
-          <Text style={styles.reviewerName}>Anonymous User</Text>
+          <Text style={styles.reviewerName}>{getReviewerName(item)}</Text>
           <Text>{'⭐'.repeat(Math.round(item.rating))}</Text>
         </View>
         <Text style={styles.reviewComment}>{item.comment}</Text>
