@@ -19,8 +19,13 @@ export type SkillOffer = {
 export type Session = {
   id: string;
   offerId: string;
+
   tutorId: string;
+  tutorName: string;
+
   learnerId: string;
+  learnerName: string;
+
   scheduledAt: string;
   status: 'requested' | 'confirmed' | 'completed' | 'cancelled';
   createdAt: string;
@@ -90,69 +95,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       if (offersData) {
         setOffers(JSON.parse(offersData));
-      } else {
-        // Initialize with sample data
-        const sampleOffers: SkillOffer[] = [
-          {
-            id: 'offer_1',
-            tutorId: 'u1',
-            title: 'Python Programming Basics',
-            description: 'Learn Python from scratch with hands-on projects and real-world examples.',
-            category: 'Programming',
-            duration: 60,
-            price: 0,
-            availableSessions: 5,
-            rating: 4.8,
-            totalBookings: 12,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: 'offer_2',
-            tutorId: 'u2',
-            title: 'Guitar Lessons for Beginners',
-            description: 'Master the basics of guitar playing with acoustic and electric guitar techniques.',
-            category: 'Music',
-            duration: 45,
-            price: 0,
-            availableSessions: 3,
-            rating: 4.9,
-            totalBookings: 8,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: 'offer_3',
-            tutorId: 'u3',
-            title: 'Digital Art & Design',
-            description: 'Learn digital painting, graphic design, and creative techniques using modern tools.',
-            category: 'Art',
-            duration: 90,
-            price: 0,
-            availableSessions: 4,
-            rating: 4.7,
-            totalBookings: 15,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: 'offer_4',
-            tutorId: 'u4',
-            title: 'Yoga & Meditation',
-            description: 'Discover mindfulness, stress relief, and physical wellness through yoga practice.',
-            category: 'Fitness',
-            duration: 60,
-            price: 0,
-            availableSessions: 6,
-            rating: 4.6,
-            totalBookings: 20,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ];
-        setOffers(sampleOffers);
-        await AsyncStorage.setItem('offers', JSON.stringify(sampleOffers));
       }
+        
       
       if (sessionsData) setSessions(JSON.parse(sessionsData));
       if (reviewsData) setReviews(JSON.parse(reviewsData));

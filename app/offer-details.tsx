@@ -63,18 +63,51 @@ export default function OfferDetails() {
           <Text style={styles.sessions}>Available sessions: {offer.availableSessions}</Text>
         </Card.Content>
         <Card.Actions>
-          <Button mode="contained" onPress={() => router.push({ pathname: '/book-session', params: { offerId: offer.id } })}>
-            Book Session
-          </Button>
-          <Button mode="outlined" onPress={handleReport}>
-            Report
-          </Button>
-          {canDelete && (
-            <Button textColor="#d32f2f" onPress={handleDelete}>
-              Delete
-            </Button>
-          )}
-        </Card.Actions>
+  <Button
+    mode="contained"
+    onPress={() =>
+      router.push({
+        pathname: '/book-session',
+        params: {
+          offerId: offer.id,
+        },
+      })
+    }
+  >
+    Book Session
+  </Button>
+
+  <Button
+    mode="outlined"
+    onPress={() =>
+      router.push({
+        pathname: '/chat',
+        params: {
+          receiverId: offer.tutorId,
+          receiverName: offer.title,
+        },
+      })
+    }
+  >
+    Chat Tutor
+  </Button>
+
+  <Button
+    mode="outlined"
+    onPress={handleReport}
+  >
+    Report
+  </Button>
+
+  {canDelete && (
+    <Button
+      textColor="#d32f2f"
+      onPress={handleDelete}
+    >
+      Delete
+    </Button>
+  )}
+</Card.Actions>
       </Card>
     </ScrollView>
   );

@@ -13,7 +13,8 @@ export default function BookSession() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
+const [offeredSkill, setOfferedSkill] = useState('');
+const [loading, setLoading] = useState(false);
 
   const offer = offers.find(o => o.id === offerId);
 
@@ -26,10 +27,17 @@ export default function BookSession() {
   }
 
   const handleBookSession = async () => {
-    if (!selectedDate || !selectedTime) {
-      Alert.alert('Error', 'Please select date and time');
-      return;
-    }
+    if (
+  !selectedDate ||
+  !selectedTime ||
+  !offeredSkill.trim()
+) {
+  Alert.alert(
+    'Error',
+    'Please select date, time and offer a skill in return'
+  );
+  return;
+}
 
     if (!user) {
       Alert.alert('Error', 'You must be logged in to book a session');
@@ -41,12 +49,20 @@ export default function BookSession() {
       const scheduledAt = new Date(`${selectedDate}T${selectedTime}`).toISOString();
       
       await bookSession({
-        offerId: offer.id,
-        tutorId: offer.tutorId,
-        learnerId: user.id,
-        scheduledAt,
-        status: 'requested',
-      });
+  offerId: offer.id,
+
+  tutorId: offer.tutorId,
+  tutorName: offer.tutorId,
+
+  learnerId: user.id,
+  learnerName: user.name,
+
+  scheduledAt,
+  status: 'requested',
+
+  offeredSkill: offeredSkill.trim(),
+  notes,
+});
 
       Alert.alert('Success', 'Session booking request sent!');
       router.back();
@@ -96,7 +112,14 @@ export default function BookSession() {
               mode="outlined"
               placeholder="HH:MM"
             />
-
+            <TextInput
+  label="Skill You Offer In Return *"
+  value={offeredSkill}
+  onChangeText={setOfferedSkill}
+  style={styles.input}
+  mode="outlined"
+  placeholder="e.g. React, Guitar, UI Design, Java"
+/>
             <TextInput
               label="Notes (Optional)"
               value={notes}
