@@ -22,12 +22,32 @@ const SkillSchema = new mongoose.Schema({
     required: true,
   },
 
+  tutorName: {
+    type: String,
+    required: true,
+  },
+
+  tutorProfilePicture: {
+    type: String,
+    default: "",
+  },
+
+  duration: {
+    type: Number,
+    default: 60,
+  },
+
   sessionsAvailable: {
     type: Number,
     default: 5,
   },
 
   rating: {
+    type: Number,
+    default: 0,
+  },
+
+  totalBookings: {
     type: Number,
     default: 0,
   },

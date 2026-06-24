@@ -1,115 +1,334 @@
-import { AuthContext } from '@/contexts/auth-context';
-import { useData } from '@/contexts/data-context';
-import { useRouter } from 'expo-router';
-import React, { useContext, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, HelperText, SegmentedButtons, Text, TextInput, Title } from 'react-native-paper';
+// app/(tabs)/create.tsx
 
-const CATEGORIES = ['Programming', 'Music', 'Art', 'Fitness', 'Language', 'Business', 'Other'];
-const DURATIONS = [30, 60, 90, 120]; // minutes
+import { AuthContext } from "@/contexts/auth-context";
+import { API_URL } from "@/constants/api";
+import { useRouter } from "expo-router";
+import React, { useContext, useState } from "react";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Button, Card, Chip, Text, TextInput, Title } from "react-native-paper";
+
+const CATEGORIES = [
+  "Programming",
+  "Music",
+  "Art",
+  "Fitness",
+  "Language",
+  "Business",
+  "Other",
+];
+
+const LEVELS = ["Beginner", "Intermediate", "Advanced"];
+
+const DURATIONS = ["3 Days", "7 Days", "15 Days", "1 Month", "Custom"];
+
+const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function CreatePost() {
-  const { addOffer } = useData();
   const { user } = useContext(AuthContext);
   const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Programming');
-  const [duration, setDuration] = useState(60);
-  const [availableSessions, setAvailableSessions] = useState(1);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+
+  const [skillWantedInput, setSkillWantedInput] = useState("");
+
+  const [skillsWanted, setSkillsWanted] = useState<string[]>([]);
+
+  const [category, setCategory] = useState("Programming");
+
+  const [level, setLevel] = useState("Beginner");
+
+  const [durationType, setDurationType] = useState("7 Days");
+
+  const [customDays, setCustomDays] = useState("");
+
+  const [startTime, setStartTime] = useState("06:00 PM");
+
+  const [endTime, setEndTime] = useState("07:00 PM");
+
+  const [selectedDays, setSelectedDays] = useState<string[]>([
+    "Mon",
+    "Wed",
+    "Fri",
+  ]);
+
   const [loading, setLoading] = useState(false);
 
+  const toggleDay = (day: string) => {
+    if (selectedDays.includes(day)) {
+      setSelectedDays(selectedDays.filter((d) => d !== day));
+    } else {
+      setSelectedDays([...selectedDays, day]);
+    }
+  };
+
+  const addSkillWanted = () => {
+    if (!skillWantedInput.trim()) return;
+
+    if (skillsWanted.length >= 5) {
+      Alert.alert("Limit Reached", "You can add maximum 5 skills.");
+      return;
+    }
+
+    if (skillsWanted.includes(skillWantedInput.trim())) {
+      Alert.alert("Duplicate Skill", "Skill already added.");
+      return;
+    }
+
+    setSkillsWanted([...skillsWanted, skillWantedInput.trim()]);
+
+    setSkillWantedInput("");
+  };
+
+  const removeSkillWanted = (index: number) => {
+    setSkillsWanted(skillsWanted.filter((_, i) => i !== index));
+  };
+
   const onPost = async () => {
-    if (!title.trim() || !description.trim() || !category) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if (!title.trim() || !description.trim() || skillsWanted.length === 0) {
+      Alert.alert("Error", "Please fill all required fields");
+      return;
+    }
+
+    if (selectedDays.length === 0) {
+      Alert.alert("Error", "Select at least one day");
+      return;
+    }
+
+    if (durationType === "Custom" && !customDays) {
+      Alert.alert("Error", "Enter custom duration");
       return;
     }
 
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to create an offer');
+      Alert.alert("Error", "Login required");
       return;
     }
 
-    setLoading(true);
     try {
-      await addOffer({
-        tutorId: user.id,
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        duration,
-        price: 0, // Free for MVP
-        availableSessions,
-        rating: 0,
-        totalBookings: 0,
+      setLoading(true);
+
+      const response = await fetch(`${API_URL}/api/skills/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          category,
+
+          tutorId: user.id,
+          tutorName: user.name,
+
+          tutorProfilePicture: "",
+
+          duration: 60,
+          sessionsAvailable: 5,
+
+          availableSlots: selectedDays,
+        }),
       });
-      
-      Alert.alert('Success', 'Your skill offer has been created!');
-      router.replace('/');
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Failed to create skill");
+        return;
+      }
+
+      Alert.alert("Success", "Skill offer created successfully");
+
+      router.replace("/");
     } catch (error) {
-      Alert.alert('Error', 'Failed to create offer. Please try again.');
+      Alert.alert("Error", "Failed to create offer");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
         <Title style={styles.title}>Create Skill Offer</Title>
-        <Text style={styles.subtitle}>Share your expertise with the community</Text>
-        
+
+        <Text style={styles.subtitle}>
+          Share your expertise with the community
+        </Text>
+
         <Card style={styles.card}>
           <Card.Content>
             <TextInput
               label="Skill Title *"
+              mode="outlined"
               value={title}
               onChangeText={setTitle}
               style={styles.input}
-              mode="outlined"
-              placeholder="e.g., Python Programming Basics"
+              outlineColor="#d1d5db"
+              activeOutlineColor="#2563eb"
             />
-            
+
             <TextInput
               label="Description *"
+              mode="outlined"
+              multiline
+              numberOfLines={5}
               value={description}
               onChangeText={setDescription}
               style={styles.input}
-              mode="outlined"
-              multiline
-              numberOfLines={4}
-              placeholder="Describe what you'll teach and what students will learn..."
+              outlineColor="#d1d5db"
+              activeOutlineColor="#2563eb"
             />
 
-            <Text style={{ marginBottom: 8 }}>Category *</Text>
-            <SegmentedButtons
-              value={category}
-              onValueChange={setCategory}
-              buttons={CATEGORIES.map(c => ({ value: c, label: c }))}
-            />
+            {/* SKILLS WANTED */}
+
+            <Text style={styles.section}>Skills Wanted *</Text>
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <TextInput
+                label="Add Skill"
+                mode="outlined"
+                value={skillWantedInput}
+                onChangeText={setSkillWantedInput}
+                style={{
+                  flex: 1,
+                }}
+              />
+
+              <Button
+                mode="contained"
+                onPress={addSkillWanted}
+                style={{
+                  marginLeft: 8,
+                }}
+              >
+                Add
+              </Button>
+            </View>
+
+            <View style={styles.chipContainer}>
+              {skillsWanted.map((skill, index) => (
+                <Chip
+                  key={index}
+                  onClose={() => removeSkillWanted(index)}
+                  style={styles.activeChip}
+                >
+                  {skill}
+                </Chip>
+              ))}
+            </View>
+            {/* CATEGORY */}
+
+            <Text style={styles.section}>Category</Text>
+
+            <View style={styles.chipContainer}>
+              {CATEGORIES.map((item) => (
+                <Chip
+                  key={item}
+                  selected={category === item}
+                  onPress={() => setCategory(item)}
+                  style={category === item ? styles.activeChip : styles.chip}
+                >
+                  {item}
+                </Chip>
+              ))}
+            </View>
+
+            {/* LEVEL */}
+
+            <Text style={styles.section}>Skill Level</Text>
+
+            <View style={styles.chipContainer}>
+              {LEVELS.map((item) => (
+                <Chip
+                  key={item}
+                  selected={level === item}
+                  onPress={() => setLevel(item)}
+                  style={level === item ? styles.activeChip : styles.chip}
+                >
+                  {item}
+                </Chip>
+              ))}
+            </View>
+
+            {/* DURATION */}
+
+            <Text style={styles.section}>Program Duration</Text>
+
+            <View style={styles.chipContainer}>
+              {DURATIONS.map((item) => (
+                <Chip
+                  key={item}
+                  selected={durationType === item}
+                  onPress={() => setDurationType(item)}
+                  style={
+                    durationType === item ? styles.activeChip : styles.chip
+                  }
+                >
+                  {item}
+                </Chip>
+              ))}
+            </View>
+
+            {durationType === "Custom" && (
+              <TextInput
+                label="Custom Days"
+                mode="outlined"
+                keyboardType="numeric"
+                value={customDays}
+                onChangeText={setCustomDays}
+                style={styles.input}
+                outlineColor="#d1d5db"
+                activeOutlineColor="#2563eb"
+              />
+            )}
+
+            {/* DAILY TIMING */}
+
+            <Text style={styles.section}>Daily Timing</Text>
 
             <View style={styles.row}>
               <TextInput
-                label="Duration (minutes)"
-                value={duration.toString()}
-                onChangeText={(text) => setDuration(parseInt(text) || 60)}
-                style={[styles.input, styles.halfInput]}
+                label="Start Time"
                 mode="outlined"
-                keyboardType="numeric"
+                value={startTime}
+                onChangeText={setStartTime}
+                style={styles.halfInput}
               />
+
               <TextInput
-                label="Available Sessions"
-                value={availableSessions.toString()}
-                onChangeText={(text) => setAvailableSessions(parseInt(text) || 1)}
-                style={[styles.input, styles.halfInput]}
+                label="End Time"
                 mode="outlined"
-                keyboardType="numeric"
+                value={endTime}
+                onChangeText={setEndTime}
+                style={styles.halfInput}
               />
             </View>
 
-            <HelperText type={(!title.trim() || !description.trim()) ? 'error' : 'info'} visible={!title.trim() || !description.trim()}>
-              Title and Description are required.
-            </HelperText>
+            {/* AVAILABLE DAYS */}
+
+            <Text style={styles.section}>Available Days</Text>
+
+            <View style={styles.chipContainer}>
+              {DAYS.map((day) => (
+                <Chip
+                  key={day}
+                  selected={selectedDays.includes(day)}
+                  onPress={() => toggleDay(day)}
+                  style={
+                    selectedDays.includes(day) ? styles.activeChip : styles.chip
+                  }
+                >
+                  {day}
+                </Chip>
+              ))}
+            </View>
 
             <Button
               mode="contained"
@@ -117,8 +336,9 @@ export default function CreatePost() {
               loading={loading}
               disabled={loading}
               style={styles.button}
+              buttonColor="#2563eb"
             >
-              {loading ? 'Creating Offer...' : 'Create Offer'}
+              Create Offer
             </Button>
           </Card.Content>
         </Card>
@@ -128,13 +348,76 @@ export default function CreatePost() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  content: { padding: 16 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 8, color: '#2563eb' },
-  subtitle: { fontSize: 16, marginBottom: 24, color: '#666' },
-  card: { elevation: 4 },
-  input: { marginBottom: 16 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  halfInput: { flex: 0.48 },
-  button: { marginTop: 16 },
+  container: {
+    flex: 1,
+    backgroundColor: "#f6f7fb",
+  },
+
+  content: {
+    padding: 16,
+    paddingTop: 40,
+    paddingBottom: 40,
+  },
+
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#2563eb",
+  },
+
+  subtitle: {
+    color: "#6b7280",
+    marginBottom: 20,
+    fontSize: 15,
+  },
+
+  card: {
+    borderRadius: 24,
+    backgroundColor: "#ffffff",
+    elevation: 3,
+  },
+
+  input: {
+    marginBottom: 16,
+    backgroundColor: "#fff",
+  },
+
+  section: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 10,
+    marginTop: 8,
+  },
+
+  chipContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 15,
+  },
+
+  chip: {
+    backgroundColor: "#f1f5f9",
+  },
+
+  activeChip: {
+    backgroundColor: "#dbeafe",
+  },
+
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+
+  halfInput: {
+    width: "48%",
+    backgroundColor: "#fff",
+  },
+
+  button: {
+    marginTop: 20,
+    borderRadius: 30,
+    paddingVertical: 6,
+  },
 });
