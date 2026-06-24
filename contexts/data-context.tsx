@@ -27,7 +27,7 @@ export type Session = {
   learnerName: string;
 
   scheduledAt: string;
-  status: 'requested' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'requested' | 'accepted' | 'completed' | 'cancelled' | 'rejected';
   createdAt: string;
   updatedAt: string;
 };

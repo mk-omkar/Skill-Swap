@@ -27,20 +27,34 @@ const SkillSchema = new mongoose.Schema({
     required: true,
   },
 
-  tutorProfilePicture: {
+  skillsWanted: [String],
+
+  level: {
+    type: String,
+    default: "Beginner",
+  },
+
+  durationType: {
+    type: String,
+    default: "7 Days",
+  },
+
+  customDays: {
+    type: Number,
+    default: null,
+  },
+
+  startTime: {
     type: String,
     default: "",
   },
 
-  duration: {
-    type: Number,
-    default: 60,
+  endTime: {
+    type: String,
+    default: "",
   },
 
-  sessionsAvailable: {
-    type: Number,
-    default: 5,
-  },
+  availableSlots: [String],
 
   rating: {
     type: Number,
@@ -51,12 +65,11 @@ const SkillSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-
-  availableSlots: [
-    {
-      type: String,
-    },
-  ],
+  
+  isBooked: {
+  type: Boolean,
+  default: false,
+},
 
   createdAt: {
     type: Date,

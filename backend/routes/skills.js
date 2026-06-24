@@ -19,7 +19,26 @@ router.post("/create", async (req, res) => {
 // Get All Skills
 router.get("/", async (req, res) => {
   try {
-    const skills = await Skill.find().sort({
+  const skills = await Skill.find({
+  isBooked: false,
+}).sort({
+  createdAt: -1,
+});
+
+    res.json(skills);
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+    });
+  }
+});
+
+// Get Skills By Tutor
+router.get("/tutor/:id", async (req, res) => {
+  try {
+    const skills = await Skill.find({
+      tutorId: req.params.id,
+    }).sort({
       createdAt: -1,
     });
 

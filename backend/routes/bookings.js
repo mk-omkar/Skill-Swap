@@ -1,6 +1,6 @@
 const express = require("express");
 const Booking = require("../models/Booking");
-
+const Skill = require("../models/Skill");
 const router = express.Router();
 
 // Create Booking
@@ -65,18 +65,29 @@ router.get("/learner/:id", async (req, res) => {
   }
 });
 
-// Update Status
 router.put("/:id", async (req, res) => {
   try {
-    const booking = await Booking.findByIdAndUpdate(
-      req.params.id,
-      {
-        status: req.body.status,
-      },
-      {
-        new: true,
-      }
-    );
+    const booking =
+      await Booking.findByIdAndUpdate(
+        req.params.id,
+        {
+          status: req.body.status,
+        },
+        {
+          new: true,
+        }
+      );
+
+    if (
+      req.body.status === "accepted"
+    ) {
+      await Skill.findByIdAndUpdate(
+        booking.offerId,
+        {
+          isBooked: true,
+        }
+      );
+    }
 
     res.json(booking);
   } catch (error) {

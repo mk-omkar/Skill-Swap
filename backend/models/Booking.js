@@ -41,7 +41,7 @@ const BookingSchema = new mongoose.Schema({
 
   scheduledAt: {
     type: Date,
-    required: true,
+    default: Date.now,
   },
 
   notes: {

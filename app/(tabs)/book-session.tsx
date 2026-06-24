@@ -1,24 +1,21 @@
-import { AuthContext } from '@/contexts/auth-context';
-import { API_URL } from '@/constants/api';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, {
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { AuthContext } from "@/contexts/auth-context";
+import { API_URL } from "@/constants/api";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
   StyleSheet,
   View,
-} from 'react-native';
+} from "react-native";
 import {
   Button,
   Card,
+  Chip,
   Text,
   TextInput,
   Title,
-} from 'react-native-paper';
+} from "react-native-paper";
 
 export default function BookSession() {
   const { user } = useContext(AuthContext);
@@ -28,18 +25,14 @@ export default function BookSession() {
 
   const [offer, setOffer] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  const [selectedDate, setSelectedDate] =
-    useState('');
-
-  const [selectedTime, setSelectedTime] =
-    useState('');
-
-  const [notes, setNotes] =
-    useState('');
+  const [submitting, setSubmitting] =
+    useState(false);
 
   const [offeredSkill, setOfferedSkill] =
-    useState('');
+    useState("");
+
+  const [notes, setNotes] =
+    useState("");
 
   useEffect(() => {
     fetchOffer();
@@ -51,7 +44,8 @@ export default function BookSession() {
         `${API_URL}/api/skills/${offerId}`
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       setOffer(data);
     } catch (error) {
@@ -61,82 +55,138 @@ export default function BookSession() {
     }
   };
 
-  const handleBookSession = async () => {
-    if (
-      !selectedDate ||
-      !selectedTime ||
-      !offeredSkill.trim()
-    ) {
+  const handleBooking = async () => {
+    if (!user) {
       Alert.alert(
-        'Error',
-        'Please select date, time and offer a skill in return'
+        "Error",
+        "Please login first"
       );
       return;
     }
 
-    if (!user) {
+    if (
+      String(offer.tutorId) ===
+      String(user.id)
+    ) {
       Alert.alert(
-        'Error',
-        'You must be logged in'
+        "Not Allowed",
+        "You cannot book your own skill."
+      );
+      return;
+    }
+
+    if (!offeredSkill.trim()) {
+      Alert.alert(
+        "Error",
+        "Please enter a skill to offer in return."
       );
       return;
     }
 
     try {
-      const scheduledAt = new Date(
-        `${selectedDate}T${selectedTime}`
-      ).toISOString();
+      setSubmitting(true);
 
-      const response = await fetch(
-        `${API_URL}/api/bookings/create`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type':
-              'application/json',
-          },
-          body: JSON.stringify({
-            offerId: offer._id,
+      const bookingsResponse =
+        await fetch(
+          `${API_URL}/api/bookings`
+        );
 
-            tutorId: offer.tutorId,
-            tutorName: offer.tutorName,
+      const bookings =
+        await bookingsResponse.json();
 
-            learnerId: user.id,
-            learnerName: user.name,
+      const alreadyRequested =
+  bookings.find(
+    (booking: any) =>
+      String(
+        booking.offerId
+      ) === String(offer._id) &&
+      String(
+        booking.learnerId
+      ) === String(user.id) &&
+      booking.status !==
+        "rejected"
+  );
 
-            scheduledAt,
+      if (alreadyRequested) {
+        Alert.alert(
+          "Already Requested",
+          "You already sent a request for this skill."
+        );
 
-            offeredSkill:
-              offeredSkill.trim(),
+        return;
+      }
 
-            notes,
+      const response =
+        await fetch(
+          `${API_URL}/api/bookings/create`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+            body: JSON.stringify({
+              offerId: offer._id,
+              offerTitle:
+                offer.title,
 
-            status: 'requested',
-          }),
-        }
-      );
+              tutorId:
+                offer.tutorId,
+
+              tutorName:
+                offer.tutorName,
+
+              learnerId:
+                user.id,
+
+              learnerName:
+                user.name,
+
+              offeredSkill:
+                offeredSkill.trim(),
+
+              notes,
+
+              scheduledAt:
+                new Date(),
+            }),
+          }
+        );
+
+      const data =
+        await response.json();
 
       if (!response.ok) {
-        throw new Error();
+        Alert.alert(
+          "Error",
+          data.error ||
+            "Failed to create booking"
+        );
+
+        return;
       }
 
       Alert.alert(
-        'Success',
-        'Booking request sent'
+        "Success",
+        "Booking request sent successfully"
       );
 
       router.back();
     } catch (error) {
+      console.log(error);
+
       Alert.alert(
-        'Error',
-        'Failed to create booking'
+        "Error",
+        "Cannot connect to server"
       );
+    } finally {
+      setSubmitting(false);
     }
   };
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.center}>
         <Text>Loading...</Text>
       </View>
     );
@@ -144,116 +194,176 @@ export default function BookSession() {
 
   if (!offer) {
     return (
-      <View style={styles.container}>
+      <View style={styles.center}>
         <Text>Offer not found</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.content}>
         <Title style={styles.title}>
           Book Session
         </Title>
 
+        <Text style={styles.subtitle}>
+          Request a skill exchange
+        </Text>
+
         <Card style={styles.card}>
           <Card.Content>
-            <Text style={styles.offerTitle}>
+            <Text
+              style={styles.offerTitle}
+            >
               {offer.title}
             </Text>
 
             <Text
-              style={styles.offerDescription}
+              style={
+                styles.description
+              }
             >
               {offer.description}
             </Text>
 
-            <View
-              style={styles.offerDetails}
+            <Chip
+              style={
+                styles.categoryChip
+              }
             >
-              <Text
-                style={styles.detailText}
-              >
-                Category:{' '}
-                {offer.category}
-              </Text>
+              {offer.category}
+            </Chip>
 
-              <Text
-                style={styles.detailText}
-              >
-                Rating: ⭐{' '}
-                {offer.rating}
-              </Text>
+            <Text style={styles.info}>
+              Tutor:{" "}
+              {offer.tutorName}
+            </Text>
 
-              <Text
-                style={styles.detailText}
-              >
-                Available Sessions:{' '}
-                {
-                  offer.sessionsAvailable
-                }
-              </Text>
-            </View>
-          </Card.Content>
-        </Card>
+            <Text style={styles.info}>
+              Level:{" "}
+              {offer.level}
+            </Text>
 
-        <Card style={styles.bookingCard}>
-          <Card.Content>
-            <Title
+            <Text style={styles.info}>
+              Duration:{" "}
+              {
+                offer.durationType
+              }
+            </Text>
+
+            <Text style={styles.info}>
+              Time:{" "}
+              {offer.startTime}
+              {" - "}
+              {offer.endTime}
+            </Text>
+
+            <Text
               style={
                 styles.sectionTitle
               }
             >
-              Session Details
-            </Title>
+              Available Days
+            </Text>
 
-            <TextInput
-              label="Date"
-              value={selectedDate}
-              onChangeText={
-                setSelectedDate
+            <View
+              style={
+                styles.chipContainer
               }
-              style={styles.input}
-              mode="outlined"
-              placeholder="YYYY-MM-DD"
-            />
+            >
+              {offer.availableSlots?.map(
+                (
+                  day: string,
+                  index: number
+                ) => (
+                  <Chip
+                    key={index}
+                    style={
+                      styles.activeChip
+                    }
+                  >
+                    {day}
+                  </Chip>
+                )
+              )}
+            </View>
+
+            <Text style={styles.sectionTitle}>
+  Choose A Skill To Exchange
+</Text>
+
+<View style={styles.chipContainer}>
+  {offer.skillsWanted?.length > 0 ? (
+    offer.skillsWanted.map(
+      (
+        skill: string,
+        index: number
+      ) => (
+        <Chip
+          key={index}
+          selected={
+            offeredSkill === skill
+          }
+          onPress={() =>
+            setOfferedSkill(skill)
+          }
+          style={
+            offeredSkill === skill
+              ? styles.selectedChip
+              : styles.activeChip
+          }
+          textStyle={
+            offeredSkill === skill
+              ? { color: "#fff" }
+              : undefined
+          }
+        >
+          {skill}
+        </Chip>
+      )
+    )
+  ) : (
+    <Text>
+      Tutor did not specify
+      skills wanted
+    </Text>
+  )}
+</View>
+
+<View style={styles.selectedSkillBox}>
+  <Text style={styles.selectedSkillLabel}>
+    Selected Exchange Skill
+  </Text>
+
+  <Text style={styles.selectedSkillValue}>
+    {offeredSkill || "Tap a skill above"}
+  </Text>
+</View>
 
             <TextInput
-              label="Time"
-              value={selectedTime}
-              onChangeText={
-                setSelectedTime
-              }
-              style={styles.input}
               mode="outlined"
-              placeholder="HH:MM"
-            />
-
-            <TextInput
-              label="Skill You Offer In Return"
-              value={offeredSkill}
-              onChangeText={
-                setOfferedSkill
-              }
-              style={styles.input}
-              mode="outlined"
-            />
-
-            <TextInput
-              label="Notes"
+              label="Message To Tutor"
+              multiline
+              numberOfLines={4}
               value={notes}
               onChangeText={setNotes}
               style={styles.input}
-              mode="outlined"
-              multiline
-              numberOfLines={3}
             />
 
             <Button
               mode="contained"
               onPress={
-                handleBookSession
+                handleBooking
+              }
+              loading={
+                submitting
+              }
+              disabled={
+                submitting
               }
               style={styles.button}
             >
@@ -266,62 +376,120 @@ export default function BookSession() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        "#f8fafc",
+    },
 
-  content: {
-    padding: 16,
-  },
+    content: {
+      padding: 20,
+    },
 
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#2563eb',
-  },
+    center: {
+      flex: 1,
+      justifyContent:
+        "center",
+      alignItems: "center",
+    },
 
-  card: {
-    marginBottom: 16,
-  },
+    title: {
+      fontSize: 28,
+      fontWeight: "bold",
+      color: "#2563eb",
+    },
 
-  bookingCard: {},
+    subtitle: {
+      color: "#64748b",
+      marginBottom: 20,
+    },
 
-  offerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
+    card: {
+      borderRadius: 24,
+    },
 
-  offerDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-  },
+    offerTitle: {
+      fontSize: 22,
+      fontWeight: "700",
+      marginBottom: 10,
+    },
 
-  offerDetails: {
-    marginTop: 8,
-  },
+    description: {
+      color: "#64748b",
+      marginBottom: 10,
+    },
 
-  detailText: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 4,
-  },
+    categoryChip: {
+      alignSelf: "flex-start",
+      marginBottom: 12,
+    },
 
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
+    info: {
+      marginBottom: 6,
+    },
 
-  input: {
-    marginBottom: 16,
-  },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      marginTop: 15,
+      marginBottom: 10,
+    },
 
-  button: {
-    marginTop: 16,
-  },
-});
+    chipContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 10,
+    },
+
+    activeChip: {
+      backgroundColor:
+        "#dbeafe",
+    },
+
+    input: {
+      marginTop: 10,
+      backgroundColor:
+        "#fff",
+    },
+
+    button: {
+      marginTop: 20,
+      borderRadius: 14,
+      backgroundColor:
+        "#2563eb",
+    },
+selectedChip: {
+  backgroundColor: "#2563eb",
+  borderColor: "#2563eb",
+},
+
+selectedText: {
+  marginTop: 10,
+  marginBottom: 10,
+  fontWeight: "600",
+},
+selectedSkillBox: {
+  marginTop: 12,
+  marginBottom: 15,
+  padding: 14,
+  borderRadius: 14,
+  backgroundColor: "#eff6ff",
+  borderWidth: 1,
+  borderColor: "#bfdbfe",
+},
+
+selectedSkillLabel: {
+  fontSize: 12,
+  color: "#64748b",
+  marginBottom: 4,
+},
+
+selectedSkillValue: {
+  fontSize: 16,
+  fontWeight: "700",
+  color: "#2563eb",
+},
+  }); 

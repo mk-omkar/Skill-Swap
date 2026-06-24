@@ -1,5 +1,9 @@
 import { AuthContext } from '@/contexts/auth-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import {
+  Stack,
+  useLocalSearchParams,
+  useRouter,
+} from 'expo-router';
 import React, { useContext } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Chip, IconButton, Text } from 'react-native-paper';
@@ -34,12 +38,6 @@ const fetchOffer = async () => {
   const [offer, setOffer] = useState<any>(null);
 const [loading, setLoading] = useState(true);
 
-const handleReport = () => {
-  Alert.alert(
-    'Report',
-    'Report feature coming soon'
-  );
-};
 
 if (loading) {
   return (
@@ -61,24 +59,16 @@ const isOwner =
   user.id === offer.tutorId;
 
 return (
+  <>
+    <Stack.Screen
+      options={{
+        headerShown: false,
+      }}
+    />
   <ScrollView
     style={styles.container}
     showsVerticalScrollIndicator={false}
   >
-    <View style={styles.heroContainer}>
-      <Image
-        source={require('../assets/images/home-banner.png')}
-        style={styles.heroImage}
-        resizeMode="cover"
-      />
-
-      <IconButton
-        icon="share-variant"
-        size={22}
-        style={styles.shareButton}
-        onPress={() => {}}
-      />
-    </View>
 
     <View style={styles.content}>
       <View style={styles.titleSection}>
@@ -93,53 +83,11 @@ return (
         <Text style={styles.tutor}>
           By {offer.tutorName}
         </Text>
+        <Text style={styles.levelText}>
+  {offer.level} Level
+</Text>
       </View>
-
-      <View style={styles.infoCard}>
-        <View style={styles.infoItem}>
-          <MaterialCommunityIcons
-            name="clock-outline"
-            size={22}
-            color="#2563eb"
-          />
-          <Text style={styles.infoLabel}>
-            Duration
-          </Text>
-          <Text style={styles.infoValue}>
-            {offer.duration} min
-          </Text>
-        </View>
-
-        <View style={styles.infoItem}>
-          <MaterialCommunityIcons
-            name="account-group-outline"
-            size={22}
-            color="#2563eb"
-          />
-          <Text style={styles.infoLabel}>
-            Sessions Left
-          </Text>
-          <Text style={styles.infoValue}>
-            {offer.sessionsAvailable}
-          </Text>
-        </View>
-
-        <View style={styles.infoItem}>
-          <MaterialCommunityIcons
-            name="star-outline"
-            size={22}
-            color="#2563eb"
-          />
-          <Text style={styles.infoLabel}>
-            Rating
-          </Text>
-          <Text style={styles.infoValue}>
-            {offer.rating.toFixed(1)}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.aboutCard}>
+            <View style={styles.aboutCard}>
         <Text style={styles.sectionTitle}>
           About this Skill
         </Text>
@@ -148,6 +96,70 @@ return (
           {offer.description}
         </Text>
       </View>
+
+<View style={styles.detailCard}>
+
+  <Text style={styles.detailsHeading}>
+    Offer Details
+  </Text>
+
+  <View style={styles.detailRow}>
+    <Text style={styles.detailLabel}>
+      Duration
+    </Text>
+
+    <Text style={styles.detailValue}>
+      {offer.durationType}
+    </Text>
+  </View>
+
+  <View style={styles.detailRow}>
+    <Text style={styles.detailLabel}>
+      Timing
+    </Text>
+
+    <Text style={styles.detailValue}>
+      {offer.startTime} - {offer.endTime}
+    </Text>
+  </View>
+
+  <Text style={styles.smallSection}>
+    Available Days
+  </Text>
+
+  <View style={styles.chipContainer}>
+    {offer.availableSlots?.map(
+      (day: string, index: number) => (
+        <Chip
+          compact
+          key={index}
+          style={styles.dayChip}
+        >
+          {day}
+        </Chip>
+      )
+    )}
+  </View>
+
+  <Text style={styles.smallSection}>
+    Skills Wanted
+  </Text>
+
+  <View style={styles.chipContainer}>
+    {offer.skillsWanted?.map(
+      (skill: string, index: number) => (
+        <Chip
+          compact
+          key={index}
+          style={styles.skillChip}
+        >
+          {skill}
+        </Chip>
+      )
+    )}
+  </View>
+
+</View>
 
       <View style={styles.exchangeCard}>
         <MaterialCommunityIcons
@@ -186,129 +198,135 @@ return (
   </Button>
 )}
 
-      <View style={styles.actionRow}>
-        <Button
-          mode="outlined"
-          style={styles.actionButton}
-          onPress={() =>
-            router.push({
-              pathname: '/chat',
-              params: {
-                receiverId: offer.tutorId,
-                receiverName: offer.tutorName,
-              },
-            })
-          }
-        >
-          Chat Tutor
-        </Button>
-
-        <Button
-          mode="outlined"
-          textColor="#ef4444"
-          style={styles.actionButton}
-          onPress={handleReport}
-        >
-          Report
-        </Button>
-      </View>
-
     </View>
   </ScrollView>
+  </>
 );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8fafc",
   },
-
-  heroContainer: {
-    position: "relative",
-  },
-
-  heroImage: {
-    width: "100%",
-    height: 240,
-  },
-
   shareButton: {
     position: "absolute",
     top: 40,
     right: 12,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fff",
   },
 
   content: {
     marginTop: -24,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#fff",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 40,
   },
 
+smallSection: {
+  fontSize: 14,
+  fontWeight: "700",
+  color: "#334155",
+  marginTop: 16,
+  marginBottom: 10,
+},
   titleSection: {
     marginBottom: 20,
   },
 
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "900",
     color: "#0f172a",
     marginBottom: 12,
+    marginTop: 30,
   },
 
   categoryChip: {
     alignSelf: "flex-start",
+    backgroundColor: "#f1f5f9",
     marginBottom: 12,
-    backgroundColor: "#eff6ff",
   },
 
   tutor: {
     fontSize: 15,
     color: "#64748b",
-    fontWeight: "500",
   },
 
-  infoCard: {
+  levelText: {
+    marginTop: 4,
+    fontSize: 14,
+    color: "#2563eb",
+    fontWeight: "600",
+  },
+
+  detailCard: {
+    backgroundColor: "#f8fafc",
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 24,
+  },
+
+  detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-
-    backgroundColor: "#f8fafc",
-
-    borderRadius: 20,
-    paddingVertical: 20,
-    paddingHorizontal: 10,
-
-    marginBottom: 20,
-  },
-
-  infoItem: {
-    flex: 1,
     alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
   },
 
-  infoLabel: {
-    marginTop: 8,
-    fontSize: 12,
+  detailLabel: {
+    fontSize: 14,
     color: "#64748b",
   },
 
-  infoValue: {
-    marginTop: 4,
+  detailValue: {
     fontSize: 15,
     fontWeight: "700",
     color: "#0f172a",
   },
 
-  aboutCard: {
+  subSectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 12,
+    marginTop: 6,
+  },
+
+  chipContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+
+  skillChip: {
+    marginRight: 8, 
+    marginBottom: 8,
+    backgroundColor: "#dbeafe",
+  },
+
+  dayChip: {
+    marginRight: 8,
+    marginBottom: 8,
+    backgroundColor: "#f1f5f9",
+  },
+
+  emptyText: {
+    color: "#94a3b8",
+    fontStyle: "italic",
     marginBottom: 20,
   },
 
+  aboutCard: {
+    marginBottom: 24,
+  },
+
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "800",
     color: "#0f172a",
     marginBottom: 12,
@@ -322,14 +340,10 @@ const styles = StyleSheet.create({
 
   exchangeCard: {
     flexDirection: "row",
-    alignItems: "center",
-
+    alignItems: "flex-start",
     backgroundColor: "#fffbeb",
-
     borderRadius: 18,
-
-    padding: 16,
-
+    padding: 18,
     marginBottom: 24,
   },
 
@@ -338,13 +352,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#0f172a",
     marginLeft: 12,
-    marginBottom: 4,
+    marginBottom: 6,
   },
 
   exchangeText: {
     fontSize: 14,
-    lineHeight: 20,
     color: "#64748b",
+    lineHeight: 20,
     marginLeft: 12,
   },
 
@@ -355,14 +369,11 @@ const styles = StyleSheet.create({
   },
 
   actionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
+    marginTop: 4,
   },
 
   actionButton: {
-    flex: 1,
     borderRadius: 14,
+    borderColor: "#ef4444",
   },
 });
-

@@ -14,15 +14,49 @@ import { Card, Text, Title } from "react-native-paper";
 
 export default function Users() {
   const { user } = useContext(AuthContext);
-  const { sessions } = useData();
+  const [acceptedSessions, setAcceptedSessions] =
+  useState<any[]>([]);
   const router = useRouter();
 
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+  loadUsers();
+  loadAcceptedSessions();
+}, []);
+
+const loadAcceptedSessions = async () => {
+  try {
+    const tutorResponse = await fetch(
+      `${API_URL}/api/bookings/tutor/${user?.id}`
+    );
+
+    const learnerResponse = await fetch(
+      `${API_URL}/api/bookings/learner/${user?.id}`
+    );
+
+    const tutorBookings =
+      await tutorResponse.json();
+
+    const learnerBookings =
+      await learnerResponse.json();
+
+    const allBookings = [
+      ...tutorBookings,
+      ...learnerBookings,
+    ];
+
+    setAcceptedSessions(
+      allBookings.filter(
+        (b) =>
+          b.status === "accepted"
+      )
+    );
+  } catch (error) {
+    console.log(error);
+  }
+};
 
   const loadUsers = async () => {
     try {
@@ -40,15 +74,9 @@ export default function Users() {
     }
   };
 
-  const acceptedSessions = sessions.filter(
-    (s) =>
-      s.status === "confirmed" &&
-      (s.tutorId === user?.id ||
-        s.learnerId === user?.id)
-  );
 
   if (loading) {
-    return (
+    return (  
       <View style={styles.center}>
         <ActivityIndicator size="large" />
       </View>
@@ -75,7 +103,9 @@ export default function Users() {
 
       <FlatList
         data={acceptedSessions}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) =>
+  String(item._id || item.id || index)
+}
         renderItem={({ item }) => {
           const receiverId =
             item.tutorId === user?.id
@@ -98,7 +128,7 @@ export default function Users() {
   params: {
     receiverId,
     receiverName,
-    sessionId: item.id,
+    sessionId: item._id || item.id,
   },
 })
               }

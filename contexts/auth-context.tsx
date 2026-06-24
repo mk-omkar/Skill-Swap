@@ -210,8 +210,26 @@ const signOut = useCallback(async () => {
 }, []);
 
   const updateProfile = useCallback(
-    async (updates: Partial<User>) => {
-      if (!user) return;
+  async (updates: Partial<User>) => {
+    if (!user) return;
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/users/${user.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify(
+            updates
+          ),
+        }
+      );
+
+      const data =
+        await response.json();
 
       const updatedUser = {
         ...user,
@@ -221,12 +239,17 @@ const signOut = useCallback(async () => {
       setUser(updatedUser);
 
       await AsyncStorage.setItem(
-        'user',
-        JSON.stringify(updatedUser)
+        "user",
+        JSON.stringify(
+          updatedUser
+        )
       );
-    },
-    [user]
-  );
+    } catch (error) {
+      console.log(error);
+    }
+  },
+  [user]
+);
 
   const value = useMemo(
     () => ({

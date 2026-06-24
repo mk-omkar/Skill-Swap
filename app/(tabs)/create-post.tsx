@@ -85,6 +85,11 @@ export default function CreatePost() {
   };
 
   const onPost = async () => {
+    console.log({
+    skillsWanted,
+    startTime,
+    endTime,
+  });
     if (!title.trim() || !description.trim() || skillsWanted.length === 0) {
       Alert.alert("Error", "Please fill all required fields");
       return;
@@ -114,20 +119,30 @@ export default function CreatePost() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          category,
+  title: title.trim(),
+  description: description.trim(),
 
-          tutorId: user.id,
-          tutorName: user.name,
+  category,
 
-          tutorProfilePicture: "",
+  tutorId: user.id,
+  tutorName: user.name,
 
-          duration: 60,
-          sessionsAvailable: 5,
+  skillsWanted,
 
-          availableSlots: selectedDays,
-        }),
+  level,
+
+  durationType,
+
+  customDays:
+    durationType === "Custom"
+      ? Number(customDays)
+      : null,
+
+  startTime,
+  endTime,
+
+  availableSlots: selectedDays,
+}),
       });
 
       const data = await response.json();

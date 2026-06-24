@@ -1,5 +1,5 @@
 import { API_URL } from "@/constants/api";
-import { useData } from '@/contexts/data-context';
+import { useData } from "@/contexts/data-context";
 import { AuthContext } from "@/contexts/auth-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useContext, useEffect, useState } from "react";
@@ -20,22 +20,38 @@ import {
   Title,
   Portal,
   Dialog,
+  Menu,
 } from "react-native-paper";
 
 export default function ChatRoom() {
   const { user } = useContext(AuthContext);
-  const { sessions, updateSession } = useData();
+  const { updateSession } = useData();
   const router = useRouter();
 
-  const { receiverId, receiverName, sessionId } =
-  useLocalSearchParams();
+  const { receiverId, receiverName, sessionId } = useLocalSearchParams();
   console.log("SESSION ID:", sessionId);
 
-  const [messages, setMessages] = useState<any[]>([]);
+  const [sessionEnded, setSessionEnded] =
+  useState(false);
+
+const [endedToday, setEndedToday] =
+  useState(false);
+
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [meetVisible, setMeetVisible] = useState(false);
-const [meetLink, setMeetLink] = useState("");
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [meetLink, setMeetLink] = useState("");
+  const [messages, setMessages] = useState<any[]>([]);
+
+  const [reportVisible, setReportVisible] =
+  useState(false);
+
+const [complaint, setComplaint] =
+  useState("");
+
+  const [sessionStatus, setSessionStatus] =
+  useState("Session currently ongoing");
 
   const senderId = user?.id;
 
@@ -64,6 +80,21 @@ const [meetLink, setMeetLink] = useState("");
   }, []);
 
   const sendMessage = async () => {
+    if (sessionEnded) {
+  Alert.alert(
+    "Course Completed",
+    "This chat has been permanently closed."
+  );
+  return;
+}
+
+if (endedToday) {
+  Alert.alert(
+    "Session Ended",
+    "Continue the session tomorrow."
+  );
+  return;
+}
     if (!newMessage.trim()) return;
 
     try {
@@ -90,132 +121,351 @@ const [meetLink, setMeetLink] = useState("");
       setLoading(false);
     }
   };
-const shareMeetLink = async () => {
-  if (!meetLink.trim()) {
-    Alert.alert("Enter a Google Meet link");
-    return;
-  }
+  const shareMeetLink = async () => {
+    if (!meetLink.trim()) {
+      Alert.alert("Enter a Google Meet link");
+      return;
+    }
 
-  try {
-    await fetch(`${API_URL}/api/chat/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        senderId,
-        receiverId,
-        message: `MEET_LINK:${meetLink}`,
-      }),
-    });
+    try {
+      await fetch(`${API_URL}/api/chat/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          senderId,
+          receiverId,
+          message: `MEET_LINK:${meetLink}`,
+        }),
+      });
 
-    setMeetLink("");
-    setMeetVisible(false);
+      setMeetLink("");
+      setMeetVisible(false);
 
-    loadMessages();
-  } catch (error) {
-    console.log(error);
-  }
-};
-const endSession = async () => {
-  console.log("sessionId =", sessionId);
+      loadMessages();
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const endSession = async () => {
+    console.log("sessionId =", sessionId);
 
-  if (!sessionId) {
-    Alert.alert("Error", "Session ID missing");
-    return;
-  }
+    if (!sessionId) {
+      Alert.alert("Error", "Session ID missing");
+      return;
+    }
 
-  try {
-    await updateSession(String(sessionId), {
-      status: "completed",
-    });
+    try {
+      await updateSession(String(sessionId), {
+        status: "completed",
+      });
 
-    Alert.alert("Success", "Session completed");
+      Alert.alert("Success", "Session completed");
 
-    router.replace("/chat");
-  } catch (err) {
-    console.log(err);
-    Alert.alert("Error", "Could not complete session");
-  }
-};
+      router.replace("/chat");
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Error", "Could not complete session");
+    }
+  };
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.headerRow}>
-        <Title style={styles.header}>{receiverName}</Title>
-        <Button
-  mode="outlined"
-  onPress={() => setMeetVisible(true)}
->
-  Share Meet Link
-</Button>
+      <View style={styles.topBar}>
+        <View
+          style={{
+            width: 45,
+            height: 45,
+            borderRadius: 22,
+            backgroundColor: "#2563eb",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              color: "white",
+              fontWeight: "bold",
+            }}
+          >
+            {String(receiverName).charAt(0).toUpperCase()}
+          </Text>
+        </View>
+        <View>
+          <Title>{receiverName}</Title>
 
-        <Button
-  mode="text"
-  textColor="red"
-  onPress={endSession}
->
-  End
-</Button>
+          <Text
+            style={{
+              color: "#22c55e",
+              fontSize: 12,
+              fontWeight: "bold",
+            }}
+          >
+            ● Active Session
+          </Text>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 10,
+          }}
+        >
+          <Button mode="contained-tonal" onPress={() => setMeetVisible(true)}>
+           Google Meet
+          </Button>
 
+          <Menu
+            visible={menuVisible}
+            onDismiss={() => setMenuVisible(false)}
+            anchor={
+              <Button mode="outlined" onPress={() => setMenuVisible(true)}>
+                ⋮
+              </Button>
+            }
+          >
+           <Menu.Item
+  title="End For Today"
+  onPress={async () => {
+    setMenuVisible(false);
+
+   setEndedToday(true);
+
+setSessionStatus(
+  "Session paused for today. Continue tomorrow."
+);
+
+    const systemMessage = {
+      _id: Date.now().toString(),
+      senderId: "system",
+      message:
+        "📌 Session ended for today. Continue tomorrow.",
+    };
+
+    setMessages((prev) => [
+      ...prev,
+      systemMessage,
+    ]);
+  }}
+/>
+
+           <Menu.Item
+  title="Complete Course"
+  onPress={async () => {
+    setMenuVisible(false);
+
+   setSessionEnded(true);
+
+setSessionStatus(
+  "Course completed."
+);
+
+const systemMessage = {
+      _id: Date.now().toString(),
+      senderId: "system",
+      message:
+        "✅ This course has been completed. Chat is now closed.",
+    };
+
+    setMessages((prev) => [
+      ...prev,
+      systemMessage,
+    ]);
+  }}
+/>
+
+<Menu.Item
+  title="Report User"
+  onPress={() => {
+    setMenuVisible(false);
+    setReportVisible(true);
+  }}
+/>
+          </Menu>
+        </View>
       </View>
-<View style={{ paddingHorizontal: 10, marginBottom: 10 }}>
-  <Button
-    mode="contained-tonal"
-    onPress={async () => {
-      try {
-        await fetch(`${API_URL}/api/chat/send`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            senderId,
-            receiverId,
-            message:
-              "📧 For a better experience, please share your email and continue the session on Google Meet.",
-          }),
+      <View style={{ paddingHorizontal: 10, marginBottom: 10 }}>
+        <Card
+          style={{
+            margin: 10,
+            borderRadius: 18,
+          }}
+        >
+          <Card.Content>
+            <Text variant="titleMedium">
+  Session Status
+</Text>
+
+<Text
+  style={{
+    color:
+  sessionEnded
+    ? "red"
+    : endedToday
+    ? "#f59e0b"
+    : "#22c55e",
+
+    marginTop: 5,
+    fontWeight: "600",
+  }}
+>
+  {sessionStatus}
+</Text>
+          </Card.Content>
+        </Card>
+      </View>
+
+      <Portal>
+        <Dialog visible={meetVisible} onDismiss={() => setMeetVisible(false)}>
+          <Dialog.Title>Share Google Meet Link</Dialog.Title>
+
+          <Dialog.Content>
+            <TextInput
+              mode="outlined"
+              placeholder="https://meet.google.com/..."
+              value={meetLink}
+              onChangeText={setMeetLink}
+            />
+          </Dialog.Content>
+
+          <Dialog.Actions>
+            <Button onPress={() => setMeetVisible(false)}>Cancel</Button>
+
+            <Button onPress={shareMeetLink}>Send</Button>
+          </Dialog.Actions>
+        </Dialog>
+        <Dialog
+  visible={reportVisible}
+  onDismiss={() =>
+    setReportVisible(false)
+  }
+>
+  <Dialog.Title>
+    Report User
+  </Dialog.Title>
+
+  <Dialog.Content>
+    <Text
+      style={{
+        marginBottom: 10,
+      }}
+    >
+      Your name and email will be
+      automatically included.
+    </Text>
+
+    <TextInput
+      mode="outlined"
+      label="Complaint"
+      multiline
+      numberOfLines={4}
+      value={complaint}
+      onChangeText={setComplaint}
+    />
+  </Dialog.Content>
+
+  <Dialog.Actions>
+    <Button
+      onPress={() =>
+        setReportVisible(false)
+      }
+    >
+      Cancel
+    </Button>
+
+    <Button
+      onPress={() => {
+        if (!complaint.trim()) {
+          Alert.alert(
+            "Please enter your complaint"
+          );
+          return;
+        }
+
+        console.log({
+          reporterName: user?.name,
+          reporterEmail: user?.email,
+          complaint,
         });
 
-        loadMessages();
-      } catch (error) {
-        console.log(error);
+        Alert.alert(
+          "Report Submitted",
+          "Your complaint has been sent."
+        );
+
+        setComplaint("");
+        setReportVisible(false);
+      }}
+    >
+      Submit
+    </Button>
+  </Dialog.Actions>
+</Dialog>
+      </Portal>
+      <Dialog
+  visible={reportVisible}
+  onDismiss={() =>
+    setReportVisible(false)
+  }
+>
+  <Dialog.Title>
+    Report User
+  </Dialog.Title>
+
+  <Dialog.Content>
+    <TextInput
+      mode="outlined"
+      label="Your Name"
+      value={user?.name || ""}
+      disabled
+      style={{ marginBottom: 10 }}
+    />
+
+    <TextInput
+      mode="outlined"
+      label="Your Email"
+      value={user?.email || ""}
+      disabled
+      style={{ marginBottom: 10 }}
+    />
+
+    <TextInput
+      mode="outlined"
+      label="Complaint"
+      multiline
+      numberOfLines={4}
+      value={complaint}
+      onChangeText={setComplaint}
+    />
+  </Dialog.Content>
+
+  <Dialog.Actions>
+    <Button
+      onPress={() =>
+        setReportVisible(false)
       }
-    }}
-  >
-    Share Google Meet Request
-  </Button>
-</View>
-<Portal>
-  <Dialog
-    visible={meetVisible}
-    onDismiss={() => setMeetVisible(false)}
-  >
-    <Dialog.Title>Share Google Meet Link</Dialog.Title>
+    >
+      Cancel
+    </Button>
 
-    <Dialog.Content>
-      <TextInput
-        mode="outlined"
-        placeholder="https://meet.google.com/..."
-        value={meetLink}
-        onChangeText={setMeetLink}
-      />
-    </Dialog.Content>
+    <Button
+      onPress={() => {
+        Alert.alert(
+          "Report Submitted"
+        );
 
-    <Dialog.Actions>
-      <Button onPress={() => setMeetVisible(false)}>
-        Cancel
-      </Button>
-
-      <Button onPress={shareMeetLink}>
-        Send
-      </Button>
-    </Dialog.Actions>
-  </Dialog>
-</Portal>
+        setComplaint("");
+        setReportVisible(false);
+      }}
+    >
+      Submit
+    </Button>
+  </Dialog.Actions>
+</Dialog>
       <FlatList
+        style={{ flex: 1 }}
         data={messages}
         keyExtractor={(item) => item._id}
         contentContainerStyle={{
@@ -231,73 +481,94 @@ const endSession = async () => {
             ]}
           >
             {item.message?.startsWith("MEET_LINK:") ? (
-  <View>
-  <Text
-    style={{
-      fontSize: 12,
-      marginBottom: 5,
-      color: "#000000",
-    }}
-  >
-    Google Meet Invitation
-  </Text>
+              <View>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    marginBottom: 5,
+                    color: "#000000",
+                  }}
+                >
+                  Google Meet Invitation
+                </Text>
 
-  <Text
-    style={{
-      color: "#000000",
-      textDecorationLine: "underline",
-      fontWeight: "bold",
-    }}
-    onPress={() =>
-      Linking.openURL(
-        item.message.replace("MEET_LINK:", "")
-      )
-    }
-  >
-    🎥 Click Here To Join Meeting
-  </Text>
-</View>
-) : (
-  <Text
-    style={
-      item.senderId === senderId
-        ? styles.myText
-        : styles.otherText
-    }
-  >
-    {item.message}
-  </Text>
-)}
+                <Text
+                  style={{
+                    color: "#000000",
+                    textDecorationLine: "underline",
+                    fontWeight: "bold",
+                  }}
+                  onPress={() =>
+                    Linking.openURL(item.message.replace("MEET_LINK:", ""))
+                  }
+                >
+                  🎥 Click Here To Join Meeting
+                </Text>
+              </View>
+            ) : (
+              <Text
+                style={
+                  item.senderId === senderId ? styles.myText : styles.otherText
+                }
+              >
+                {item.message}
+              </Text>
+            )}
           </View>
         )}
       />
 
       <Card style={styles.inputCard}>
-        <Card.Content>
-          <TextInput
-            mode="outlined"
-            placeholder="Type a message..."
-            value={newMessage}
-            onChangeText={setNewMessage}
-            style={{
-              marginBottom: 10,
-            }}
-          />
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            padding: 10,
+          }}
+        >
+         <TextInput
+  mode="outlined"
+  value={newMessage}
+  onChangeText={setNewMessage}
+  placeholder={
+    sessionEnded
+      ? "Course completed"
+      : endedToday
+      ? "Session ended for today"
+      : "Type a message..."
+  }
+  editable={
+    !sessionEnded &&
+    !endedToday
+  }
+  style={{
+    flex: 1,
+    marginRight: 10,
+  }}
+/>
 
-          <Button mode="contained" onPress={sendMessage} loading={loading}>
+          <Button
+  mode="contained"
+  onPress={sendMessage}
+  disabled={
+    sessionEnded ||
+    endedToday
+  }
+>
             Send
           </Button>
-        </Card.Content>
+        </View>
       </Card>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
+container: {
+  flex: 1,
+  backgroundColor: "#f5f5f5",
+  paddingTop: 30,
+},
 
   headerRow: {
     flexDirection: "row",
@@ -313,30 +584,39 @@ const styles = StyleSheet.create({
 
   message: {
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 10,
     maxWidth: "80%",
+    elevation: 2,
   },
 
   myMessage: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#e9d5ff",
     alignSelf: "flex-end",
   },
 
   otherMessage: {
-    backgroundColor: "#e0e0e0",
+    backgroundColor: "#ffffff",
     alignSelf: "flex-start",
   },
 
   myText: {
-    color: "#fff",
+    color: "#000",
   },
-
   otherText: {
     color: "#000",
   },
 
   inputCard: {
     margin: 10,
+  },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 15,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
 });

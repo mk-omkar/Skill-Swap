@@ -167,59 +167,13 @@ const fetchSkills = async () => {
   />
 </View>
 
-      {/* CATEGORIES */}
-
-      <View style={styles.sectionRow}>
-        <Text style={styles.sectionTitle}>
-          Categories
-        </Text>
-
-        <Text style={styles.seeAll}>
-          See all
-        </Text>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={
-          false
-        }
-        
-  contentContainerStyle={styles.categoriesContainer}>
-  {categories.map((item) => (
-    <TouchableOpacity
-      key={item.name}
-      style={styles.categoryWrapper}
-    >
-      <View style={styles.categoryCard}>
-        <MaterialCommunityIcons
-          name={item.icon as any}
-          size={28}
-          color={item.color}
-        />
-      </View>
-
-      <Text
-        numberOfLines={1}
-        style={styles.categoryText}
-      >
-        {item.name}
-      </Text>
-    </TouchableOpacity>
-          
-        ))}
-      </ScrollView>
-
       {/* RECOMMENDED */}
 
       <View style={styles.sectionRow}>
         <Text style={styles.sectionTitle}>
-          Recommended for You
+          All Skills
         </Text>
 
-        <Text style={styles.seeAll}>
-          See all
-        </Text>
       </View>
 
       {filteredOffers.length === 0 ? (
